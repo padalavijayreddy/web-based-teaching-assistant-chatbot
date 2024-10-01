@@ -1,48 +1,39 @@
-# src/chatbot.py
-from openai import OpenAI
-from config import OPENAI_API_KEY
+import openai
 from chroma_retrieval import retrieve_relevant_content
+from config import OPENAI_API_KEY
 import chromadb
 
-# Initialize the OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-def generate_answer_from_retrieved_content(query, relevant_documents):
-    """Generate an answer from the retrieved content and the query."""
-    # Flatten the list of lists into a single list of strings
-    flattened_documents = [doc for sublist in relevant_documents for doc in sublist]
-
-    # Combine the retrieved content into a single context
-    context = " ".join(flattened_documents)
-
-    # Use OpenAI's ChatCompletion API to generate an answer
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # You can use GPT-4 if available
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that answers questions based on provided context."},
-                {"role": "user", "content": f"Context: {context}\n\nQuestion: {query}"}
-            ]
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        return f"Error occurred: {e}"
+# Set OpenAI API key
+openai.api_key = OPENAI_API_KEY
 
 def get_answer(query):
     """Main function to retrieve content and generate an answer based on the query."""
-    # Initialize Chroma client
     client = chromadb.Client()
 
-    # Get or create the collection
+    # Check if collection exists, if not, create it
     try:
-        collection = client.get_collection(name="lecture_notes")
+        collection = client.get_collection(name="lecture_notes")  # Get the ChromaDB collection
     except chromadb.errors.InvalidCollectionException:
+        print("Collection 'lecture_notes' does not exist. Creating it now...")
         collection = client.create_collection(name="lecture_notes")
 
-    # Step 1: Retrieve relevant documents from Chroma based on the query
+    # Step 1: Retrieve relevant documents from ChromaDB
     relevant_documents = retrieve_relevant_content(query, collection)
+    
+    # If documents are empty, return a fallback response
+    if not relevant_documents or relevant_documents == [[]]:
+        return "No relevant documents found for the query."
 
-    # Step 2: Generate an answer based on the retrieved documents
-    answer = generate_answer_from_retrieved_content(query, relevant_documents)
+    # Flatten the relevant documents if necessary
+    context = " ".join([doc for doc in relevant_documents if isinstance(doc, str)])
 
-    return answer
+    # Step 2: Use OpenAI's GPT model to generate an answer based on the retrieved documents
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",  # or gpt-4 if you're using GPT-4
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that answers questions based on AI lecture notes."},
+            {"role": "user", "content": f"Context: {context}\n\nQuestion: {query}"}
+        ],
+        max_tokens=500
+    )
+    return response.choices[0].message["content"].strip()

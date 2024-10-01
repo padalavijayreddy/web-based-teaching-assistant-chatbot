@@ -2,20 +2,14 @@
 from document_loader import download_lecture_notes
 from document_processor import process_documents
 from embeddings import generate_embeddings
-from chroma_storage import store_embeddings_in_chroma
 
-def test_embedding_storage():
-    # Step 1: Download the documents
-    documents = download_lecture_notes()
-
-    # Step 2: Extract text from the documents
-    texts = process_documents(documents)
-
-    # Step 3: Generate embeddings for the extracted text
-    embeddings = generate_embeddings(texts)
-
-    # Step 4: Store embeddings in ChromaDB
-    store_embeddings_in_chroma(texts, embeddings)
+def test_generate_embeddings():
+    documents = download_lecture_notes()  # Download PDFs
+    extracted_texts = process_documents(documents)  # Extract text from PDFs
+    embeddings = generate_embeddings(extracted_texts)  # Generate embeddings
+    
+    assert len(embeddings) == len(extracted_texts), "Mismatch between embeddings and extracted texts!"
+    print(f"Generated {len(embeddings)} embeddings successfully.")
 
 if __name__ == "__main__":
-    test_embedding_storage()
+    test_generate_embeddings()
