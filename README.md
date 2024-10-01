@@ -169,8 +169,7 @@ Comprehensive testing has been done on individual components of the chatbot, ens
 1. **Clone the Repository**:
 
    ```bash
-   git clone https://github.com/your-repo/chatbot-ai.git
-   cd chatbot-ai
+   git clone https://github.com/....git
    ```
 
 2. **Install Dependencies**:
